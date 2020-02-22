@@ -8,8 +8,8 @@ getAllMoviesCount((err, len) => {
   totalMovies = len;
 });
 router.get('/', function(req, res, next) {
-  let movieId = req.query.id ? req.query.id : 1;
-  let count = req.query.count ? req.query.count : 5;
+  let movieId = req.query.id ? parseInt(req.query.id) : 1;
+  let count = req.query.count ? parseInt(req.query.count) : 5;
   findMovieDataWithRatingAndTags(movieId, count, (err, doc) => {
     if(err) {
       res.status(500).json({
