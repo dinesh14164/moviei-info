@@ -6,6 +6,7 @@ var Movie = require('../models/movies');
 var Link = require('../models/links');
 var Tag = require('../models/tags');
 var Rating = require('../models/ratings');
+var Wishlist = require('../models/wishlist');
 
 const database = 'movies';
 var url = generateDBUrl(dbUser.user, dbUser.password, dbUser.host, database);
@@ -17,7 +18,6 @@ var totalMovies = 0;
 function getAllMoviesCount(cb) {
     Movie.find({}, (err, mlist) => {
         if(err) {
-            console.log(err);
             cb(err, null);
             return;
         }
@@ -28,7 +28,6 @@ function getAllMoviesCount(cb) {
 function getAllMovies(id, count, cb) {
     Movie.find({movieId: { $in: generateIds(id, count)}}, (err, mlist) => {
         if(err) {
-            console.log(err);
             cb(err, null);
             return;
         }
@@ -40,7 +39,6 @@ function getMovieRating(id,cb) {
     let ratings = []
     Rating.find({movieId: { $eq: id}},(err, mratings) => {
         if(err) {
-            console.log(err);
             cb(err, null);
             return;
         }
@@ -54,7 +52,6 @@ function getMovieTags(id, cb) {
     let tags = [];
     Tag.find({movieId: { $eq: id}},(err, mtags) => {
         if(err) {
-            console.log(err);
             cb(err, null);
             return;
         }
@@ -71,7 +68,6 @@ function getMovieLinksId(id, cb) {
     let linksId = {};
     Link.find({movieId: { $eq: id}},(err, mlinkId) => {
         if(err) {
-            console.log(err);
             cb(err, null);
             return;
         }
@@ -79,6 +75,50 @@ function getMovieLinksId(id, cb) {
         cb(null, dataObj);
     });
 }
+
+// addToWishlist({userId: 5, movieId: 4}, (err, d) => {
+//     console.log(d);
+// })
+function addToWishlist(data, cb) {
+    createConnection()
+    let wishlist = new Wishlist(data);
+    Wishlist.findOne({userId: wishlist.userId, movieId: wishlist.movieId}, (err, doc) => {
+        if(!doc) {
+            wishlist.save(wishlist,(err, result) => {
+                if(err) {
+                    cb(err, null);
+                    return;
+                }
+                cb(null, result);
+            });
+        } else {
+            cb(null, {message: 'already added'});  
+        }
+    });
+}
+
+// getWishlist(2, (err, d) => {
+//     console.log(d);
+// })
+function getWishlist(id, cb) {
+    createConnection();
+    const movieIds = [];
+    Wishlist.find({userId: id}, (err, doc) => {
+        if(doc) {
+            doc.forEach(ele => movieIds.push(ele.movieId));
+            Movie.find({movieId: { $in: movieIds}}, (err, mlist) => {
+                if(err) {
+                    cb(err, null);
+                    return;
+                }
+                cb(null, mlist)
+            });
+        } else {
+            cb(null, {})
+        }
+    })
+}
+
 
 // utils
 // findMovieDataWithRatingAndTags((err, data) => {
@@ -96,7 +136,6 @@ function findMovieDataWithRatingAndTags(id, count, cb) {
     let count1, count2 = 0;
     let eventEmitter = new events.EventEmitter();
     eventEmitter.on('end', (err, data) => {
-        // console.log('emiter: ', data);
         closeConnection();
         cb(err, data);
     });
@@ -163,5 +202,7 @@ function average(nums) {
 module.exports = {
     findMovieDataWithRatingAndTags: findMovieDataWithRatingAndTags ,
     getAllMovies: getAllMovies,
-    getAllMoviesCount: getAllMoviesCount
+    getAllMoviesCount: getAllMoviesCount,
+    addToWishlist: addToWishlist,
+    getWishlist: getWishlist
 }
